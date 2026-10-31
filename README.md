@@ -41,4 +41,11 @@ Também funciona arrastando a pasta em **Netlify Drop** (app.netlify.com/drop).
 - **iPhone (Safari):** botão Compartilhar → *Adicionar à Tela de Início*.
 
 ## Atualizar o app
-Quando mudar algum arquivo, troque a versão do cache (`blackout-v2` → `blackout-v3`) em `sw.js`; assim os celulares baixam a versão nova.
+Quando mudar algum arquivo, troque a versão do cache em `sw.js` (ex.: `blackout-v5` → `blackout-v6`) em `sw.js`; assim os celulares baixam a versão nova.
+
+## Fases (Campanha)
+As fases ficam em `levels.js`, como dados: blocos (paredes/containers), caixas, barris, alvos destrutíveis
+(`tank`, `radio`, `generator`), itens, grupos de inimigos (`soldier`, `heavy`, `officer`) que surgem quando o
+jogador passa de um ponto, e a lista de objetivos (`reach`, `destroy`, `kill`, `clear`, com tempo opcional).
+Para criar uma fase nova, copie uma existente no array `LEVELS` e ajuste as coordenadas.
+O progresso (fases liberadas, melhor tempo e nota) fica salvo no aparelho.
