@@ -39,6 +39,7 @@
   #wname{font-size:18px;letter-spacing:3px;opacity:.85}
   #mag{font-family:'Black Ops One';font-size:46px;line-height:1} #res{font-size:24px;opacity:.75}
   #reload{font-size:16px;letter-spacing:2px;color:#ffcc33;visibility:hidden}
+  #gren{font-size:16px;letter-spacing:2px;opacity:.9}
   #msg{position:absolute;left:0;right:0;top:28%;text-align:center;font-family:'Black Ops One';font-size:44px;
     color:#ffcc33;text-shadow:0 2px 10px #000;opacity:0;transition:opacity .4s}
   #note{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:80%;background:rgba(0,0,0,.6);padding:6px 12px;font-size:15px;display:none;text-align:center}
@@ -65,6 +66,8 @@
   #bJump{width:62px;height:62px;right:140px;bottom:60px}
   #bReload{width:56px;height:56px;right:136px;bottom:150px;font-size:12px}
   #bSwap{width:56px;height:56px;right:40px;bottom:225px;font-size:12px}
+  #bGren{width:56px;height:56px;right:150px;bottom:225px;font-size:12px;background:rgba(120,160,60,.25)}
+  #bMelee{width:56px;height:56px;right:215px;bottom:120px;font-size:12px}
   body.touch #ammo{bottom:16px;right:auto;left:270px;text-align:left}
   body.touch #health{width:200px}
   /* área segura (notch / barra de gestos) */
@@ -74,13 +77,13 @@
   #ammo{right:calc(20px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom))}
   body.touch #ammo{left:calc(250px + env(safe-area-inset-left))}
   #bFire{right:calc(26px + env(safe-area-inset-right))} #bSwap{right:calc(40px + env(safe-area-inset-right))}
-  #bJump{right:calc(140px + env(safe-area-inset-right))} #bReload{right:calc(136px + env(safe-area-inset-right))}
+  #bJump{right:calc(140px + env(safe-area-inset-right))} #bGren{right:calc(150px + env(safe-area-inset-right))} #bMelee{right:calc(215px + env(safe-area-inset-right))} #bReload{right:calc(136px + env(safe-area-inset-right))}
   #bPause{width:44px;height:44px;top:calc(12px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));border-radius:10px;font-size:18px}
   /* telas baixas (celular deitado) */
   @media (max-height:500px){
     .screen h1{font-size:52px} .screen h2{margin-bottom:10px}
     .screen .ctrl{font-size:15px;margin-bottom:12px}
-    #bFire{width:84px;height:84px;bottom:90px} #bSwap{bottom:190px} #bReload{bottom:128px} #bJump{bottom:44px}
+    #bFire{width:84px;height:84px;bottom:90px} #bSwap{bottom:190px} #bReload{bottom:128px} #bJump{bottom:44px} #bGren{bottom:190px} #bMelee{bottom:100px}
     #topl{font-size:16px} #topl #wave{font-size:20px} #mag{font-size:36px}
   }
   #rotate{position:fixed;inset:0;z-index:50;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:22px;letter-spacing:1px}
@@ -97,7 +100,7 @@
   <div id="hitm"></div>
   <div id="topl"><div id="wave">ONDA 1</div><div id="kills">ABATES 0</div><div id="left">INIMIGOS 0</div></div>
   <div id="health"><div class="lbl">VIDA</div><div class="bar"><div id="hpfill"></div></div></div>
-  <div id="ammo"><div id="wname">PISTOLA</div><div><span id="mag">12</span><span id="res"> / 72</span></div><div id="reload">RECARREGANDO</div></div>
+  <div id="ammo"><div id="wname">PISTOLA</div><div><span id="mag">12</span><span id="res"> / 72</span></div><div id="reload">RECARREGANDO</div><div id="gren">GRANADAS 3</div></div>
   <div id="msg"></div>
   <div id="note"></div>
   <div id="vig"></div>
@@ -109,6 +112,8 @@
   <div class="tbtn" id="bJump">PULO</div>
   <div class="tbtn" id="bReload">RECAR.</div>
   <div class="tbtn" id="bSwap">ARMA</div>
+  <div class="tbtn" id="bGren">GRAN.</div>
+  <div class="tbtn" id="bMelee">SOCO</div>
   <div class="tbtn" id="bPause">❚❚</div>
 </div>
 <div id="rotate"><div class="ph"></div>Gire o celular para jogar</div>
@@ -123,13 +128,15 @@
     <b>Shift</b><span>correr</span>
     <b>Espaço</b><span>pular</span>
     <b>R</b><span>recarregar</span>
-    <b>1 2 3 / roda</b><span>trocar arma</span>
+    <b>1 2 3 4 / roda</b><span>trocar arma (4 = punhos)</span>
+    <b>G</b><span>granada</span>
+    <b>V ou F</b><span>coronhada / soco</span>
     <b>Esc</b><span>pausar</span>
   </div>
   <div class="ctrl" id="ctrlTouch" style="display:none">
     <b>Lado esquerdo</b><span>arraste para andar</span>
     <b>Lado direito</b><span>arraste para mirar</span>
-    <b>Botões</b><span>atirar, pular, recarregar, arma</span>
+    <b>Botões</b><span>atirar, pular, recarregar, arma, granada, soco</span>
   </div>
   <button class="btn" id="playBtn">JOGAR</button>
   <button class="btn" id="installBtn">INSTALAR APP</button>
@@ -358,6 +365,11 @@ const SFX = {
   pickup() { tone(600, 1300, .18, .2, 'triangle'); },
   hurt() { noise(.12, 700, .5); tone(220, 110, .12, .25, 'sawtooth'); },
   swap() { tone(400, 300, .05, .1, 'square'); },
+  swing() { noise(.14, 2500, .35, 'bandpass', 1.2); },
+  punch() { noise(.12, 500, .9); tone(120, 50, .1, .7); },
+  thud() { noise(.1, 700, .5); tone(160, 80, .07, .3); },
+  pin() { tone(2400, 2000, .04, .12, 'square'); tone(1500, 1300, .05, .1, 'square', .08); },
+  tink() { tone(2600, 2200, .05, .08, 'triangle'); },
 };
 
 // ================= FX =================
@@ -454,8 +466,12 @@ const WEAPONS = [
   { name: 'PISTOLA', dmg: 34, rate: .17, auto: false, mag: 12, reserve: 72, spread: .006, pellets: 1, reload: 1.1, recoil: .022, shake: .05, sfx: 'pistol' },
   { name: 'FUZIL', dmg: 22, rate: .095, auto: true, mag: 30, reserve: 180, spread: .016, pellets: 1, reload: 1.6, recoil: .016, shake: .06, sfx: 'rifle' },
   { name: 'ESCOPETA', dmg: 15, rate: .75, auto: false, mag: 6, reserve: 36, spread: .065, pellets: 9, reload: 2.0, recoil: .07, shake: .16, sfx: 'shotgun' },
+  { name: 'PUNHOS', melee: true, mag: 0, reserve: 0 },
 ];
 let wState, wIndex = 0, lastShot = -99, reloading = false, reloadT = 0, switchT = 0, triggerHeld = false, triggerFresh = false, rightDown = false;
+// corpo a corpo e granadas
+const MAX_GREN = 5;
+let grenadeCount = 3, throwT = 0, meleeT = 0, meleeDur = 0, meleeKind = 'butt', meleeHand = 0, lastMelee = -99, emptyWarned = false;
 
 const gunHolder = new THREE.Group(); camera.add(gunHolder);
 const metal = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: .45, metalness: .7 });
@@ -473,10 +489,21 @@ function makeGun(i) {
     g.add(part(B(.08, .11, .5), metal, 0, 0, -.1), part(C(.018, .36), metal2, 0, .015, -.52), part(B(.05, .2, .08), metal2, 0, -.13, -.14, .25),
       part(B(.06, .1, .26), metal, 0, -.02, .26), part(B(.055, .14, .06), metal2, 0, -.1, .06, .25), part(B(.03, .05, .14), metal2, 0, .08, -.12));
     muzzle.position.set(0, .015, -.71);
-  } else {
+  } else if (i === 2) {
     g.add(part(C(.026, .62), metal, 0, .03, -.36), part(C(.02, .46), metal2, 0, -.02, -.3), part(B(.075, .065, .17), wood, 0, -.02, -.32),
       part(B(.085, .11, .24), metal, 0, 0, 0), part(B(.065, .12, .32), wood, 0, -.035, .26));
     muzzle.position.set(0, .03, -.68);
+  } else {
+    // punhos: duas mãos com luva
+    const glove = new THREE.MeshStandardMaterial({ color: 0x2a2622, roughness: .8 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xb98a68, roughness: .7 });
+    const hand = (x) => {
+      const h = new THREE.Group();
+      h.add(part(B(.11, .1, .13), glove, 0, 0, 0), part(B(.1, .035, .05), glove, 0, .03, -.08), part(B(.08, .08, .22), skin, 0, -.01, .16));
+      h.position.set(x, 0, 0); h.userData.base = h.position.clone(); g.add(h); return h;
+    };
+    g.userData.hands = [hand(-.36), hand(0)];
+    muzzle.position.set(0, 0, -.2);
   }
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd38a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
   flash.scale.setScalar(i === 2 ? .5 : .35); flash.visible = false; muzzle.add(flash);
@@ -500,13 +527,18 @@ function startReload() {
 
 const shotRay = new THREE.Raycaster(); shotRay.far = 160;
 const fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3();
+const aimQ = new THREE.Quaternion(), aimE = new THREE.Euler(0, 0, 0, 'YXZ');
+function aimBasis() {
+  aimE.set(player.pitch, player.yaw, 0); aimQ.setFromEuler(aimE);
+  fwd.set(0, 0, -1).applyQuaternion(aimQ); right.set(1, 0, 0).applyQuaternion(aimQ); up.set(0, 1, 0).applyQuaternion(aimQ);
+  return new THREE.Vector3(player.pos.x, player.pos.y + EYE, player.pos.z);
+}
 function fire() {
   const w = WEAPONS[wIndex], st = wState[wIndex];
   st.ammo--; lastShot = now; hudDirty = true;
   camera.updateMatrixWorld();
-  const origin = camera.getWorldPosition(new THREE.Vector3());
-  camera.getWorldDirection(fwd);
-  right.setFromMatrixColumn(camera.matrixWorld, 0); up.setFromMatrixColumn(camera.matrixWorld, 1);
+  // o tiro sai exatamente do centro da mira (direção do olhar, sem balanço/tremor)
+  const origin = aimBasis();
   const moving = Math.hypot(player.vel.x, player.vel.z) > 1.5;
   const spreadMul = (1 + (moving ? .8 : 0) + (player.onGround ? 0 : 1.5) + recoilHeat * 1.5) * (aimT > .5 ? .4 : 1);
   const muzzlePos = guns[wIndex].muzzle.getWorldPosition(new THREE.Vector3());
@@ -533,10 +565,8 @@ function fire() {
     }
   }
   if (hitAny) hitMarker(killAny);
-  // recuo
-  player.pitch += w.recoil * (.7 + Math.random() * .6) * (aimT > .5 ? .6 : 1);
-  player.yaw += rnd(w.recoil * .4);
-  gunKick = 1; shake = Math.max(shake, w.shake); recoilHeat = Math.min(1, recoilHeat + .25);
+  // recuo: só na arma (coice) e na abertura da mira; a visão não sobe
+  gunKick = 1 + w.recoil * 6; shake = Math.max(shake, w.shake * .35); recoilHeat = Math.min(1, recoilHeat + .25);
   flashT = .05; guns[wIndex].flash.visible = true; guns[wIndex].flash.material.rotation = Math.random() * 6;
   muzzleLight.intensity = 6;
   SFX[w.sfx]();
@@ -556,13 +586,14 @@ function damageProp(p, dmg, dir) {
     explode(pos.clone());
   }
 }
-function explode(pos) {
-  const R = 7;
+function explode(pos, grenade = false) {
+  const R = grenade ? 6.5 : 7;
   // visual
   for (let i = 0; i < 14; i++) spawnParticle(pos.clone().add(rv(.5)), rv(4).add(new THREE.Vector3(0, 3, 0)), 0xffaa55, 1.2 + Math.random(), .5 + Math.random() * .3, { tex: glowTex, add: true, grow: 1.5, drag: 3 });
   for (let i = 0; i < 12; i++) spawnParticle(pos.clone().add(rv(.8)), rv(1.5).add(new THREE.Vector3(0, 2 + Math.random() * 2, 0)), 0x3a3633, 1.4, 2.2 + Math.random() * 1.5, { grow: 2.5, opacity: .7, drag: 1 });
   for (let i = 0; i < 20; i++) spawnParticle(pos, rv(12).add(new THREE.Vector3(0, 6, 0)), 0xffdd88, .08, .6 + Math.random() * .5, { tex: glowTex, add: true, gravity: 15 });
-  spawnDebris(pos, barrelMat, 8, .4, 9);
+  if (!grenade) spawnDebris(pos, barrelMat, 8, .4, 9);
+  else spawnDebris(pos, metal, 4, .12, 10);
   boomLight.position.copy(pos).y += 1.5; boomLight.intensity = 400;
   bulletHole(new THREE.Vector3(pos.x, .005, pos.z), new THREE.Vector3(0, 1, 0)); // marca
   const scorch = holes[holes.length - 1]; scorch.scale.setScalar(18);
@@ -585,6 +616,103 @@ function explode(pos) {
   for (const c of crates) if (c.alive) { const d = c.mesh.position.distanceTo(pos); if (d < R) damageProp(c, 200, null); }
   for (const b of barrels) if (b.alive) { const d = b.mesh.position.distanceTo(pos); if (d < R * .8) after(.12 + Math.random() * .15, () => damageProp(b, 999, null)); }
   for (const d of debris) { const dd = d.m.position.distanceTo(pos); if (dd < R) { d.vel.add(_v1.subVectors(d.m.position, pos).normalize().multiplyScalar(8 * (1 - dd / R))); d.vel.y += 4; } }
+}
+
+// ================= GRANADAS =================
+const grenades = [];
+const grenadeGeo = new THREE.SphereGeometry(.09, 12, 10);
+const grenadeMat = new THREE.MeshStandardMaterial({ color: 0x3f4a2a, roughness: .6, metalness: .3 });
+const grenadeLedMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a });
+function throwGrenade() {
+  if (!player.alive || grenadeCount <= 0 || throwT > 0 || meleeT > 0 || switchT > 0) return;
+  grenadeCount--; throwT = .55; reloading = false; hudDirty = true;
+  const origin = aimBasis();
+  const m = new THREE.Mesh(grenadeGeo, grenadeMat); m.castShadow = true;
+  const led = new THREE.Mesh(new THREE.SphereGeometry(.025, 6, 4), grenadeLedMat); led.position.y = .09; m.add(led);
+  m.position.copy(origin).addScaledVector(fwd, .5).addScaledVector(right, .15).addScaledVector(up, -.1);
+  const vel = fwd.clone().multiplyScalar(17).add(new THREE.Vector3(0, 3.5, 0)).addScaledVector(player.vel, .5);
+  scene.add(m);
+  grenades.push({ m, led, vel, fuse: 2.2, spin: rv(12) });
+  SFX.pin(); SFX.swing();
+}
+function updateGrenades(dt) {
+  const r = .09;
+  for (let i = grenades.length - 1; i >= 0; i--) {
+    const g = grenades[i], p = g.m.position;
+    g.fuse -= dt;
+    g.led.visible = Math.sin(g.fuse * (g.fuse < .8 ? 40 : 14)) > 0;
+    g.vel.y -= 20 * dt;
+    p.addScaledVector(g.vel, dt);
+    g.m.rotation.x += g.spin.x * dt; g.m.rotation.z += g.spin.z * dt;
+    // chão
+    if (p.y < r) {
+      p.y = r;
+      if (Math.abs(g.vel.y) > 1.5) SFX.tink();
+      g.vel.y = Math.abs(g.vel.y) > 1 ? -g.vel.y * .4 : 0;
+      g.vel.x *= .7; g.vel.z *= .7; g.spin.multiplyScalar(.7);
+    }
+    // paredes, caixas e barris (quica no lado mais próximo)
+    for (const c of colliders) {
+      if (!c.active) continue;
+      if (p.x < c.min.x - r || p.x > c.max.x + r || p.z < c.min.z - r || p.z > c.max.z + r || p.y > c.max.y + r) continue;
+      const pen = [p.x - (c.min.x - r), (c.max.x + r) - p.x, p.z - (c.min.z - r), (c.max.z + r) - p.z, (c.max.y + r) - p.y];
+      const k = pen.indexOf(Math.min(...pen));
+      if (k === 0) { p.x = c.min.x - r; g.vel.x = -Math.abs(g.vel.x) * .45; }
+      else if (k === 1) { p.x = c.max.x + r; g.vel.x = Math.abs(g.vel.x) * .45; }
+      else if (k === 2) { p.z = c.min.z - r; g.vel.z = -Math.abs(g.vel.z) * .45; }
+      else if (k === 3) { p.z = c.max.z + r; g.vel.z = Math.abs(g.vel.z) * .45; }
+      else { p.y = c.max.y + r; g.vel.y = Math.abs(g.vel.y) * .4; g.vel.x *= .7; g.vel.z *= .7; }
+      if (k < 4 && Math.hypot(g.vel.x, g.vel.z) > 1.5) SFX.tink();
+    }
+    if (g.fuse <= 0) {
+      scene.remove(g.m); grenades.splice(i, 1);
+      explode(p.clone(), true);
+    }
+  }
+}
+
+// ================= CORPO A CORPO (coronhada / soco) =================
+const meleeRay = new THREE.Raycaster();
+function melee(kind) {
+  if (!player.alive || meleeT > 0 || throwT > 0) return;
+  const cd = kind === 'fist' ? .36 : .55;
+  if (now - lastMelee < cd) return;
+  lastMelee = now; reloading = false; hudDirty = true;
+  meleeKind = kind; meleeDur = meleeT = kind === 'fist' ? .3 : .42; meleeHand ^= 1;
+  SFX.swing();
+  after(meleeDur * .45, () => meleeHit(kind));
+}
+function meleeHit(kind) {
+  if (!player.alive) return;
+  const dmg = kind === 'fist' ? 35 : 60, range = 2.4;
+  const origin = aimBasis();
+  meleeRay.set(origin, fwd); meleeRay.far = range;
+  const h = meleeRay.intersectObjects(shootables, false)[0];
+  let target = null, head = false, point = null;
+  if (h && h.object.userData.type === 'enemy') { target = h.object.userData.ref; head = h.object.userData.part === 'head'; point = h.point; }
+  else if (!h) {
+    // tolerância: acerta o inimigo mais próximo dentro de um cone à frente
+    let best = 99;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      _v1.set(e.g.position.x - origin.x, 0, e.g.position.z - origin.z);
+      const d = _v1.length(); if (d > range + .4) continue;
+      _v1.normalize(); const dot = _v1.x * fwd.x + _v1.z * fwd.z;
+      if (dot > .7 && d < best) { best = d; target = e; point = e.g.position.clone().setY(1.2); }
+    }
+  }
+  if (target) {
+    const killed = hurtEnemy(target, dmg * (head ? 1.5 : 1), fwd, player.pos);
+    const push = _v2.set(fwd.x, 0, fwd.z).normalize();
+    if (killed) target.dv.set(push.x * 5, 2.5, push.z * 5);
+    else { target.g.position.addScaledVector(push, .7); collide(target.g.position, .42); }
+    for (let i = 0; i < 4; i++) spawnParticle(point, rv(1.5), 0x6a0d0d, .12, .35, { gravity: 6, opacity: .9 });
+    hitMarker(killed); SFX.punch(); shake = Math.max(shake, .12);
+  } else if (h) {
+    const ud = h.object.userData;
+    if (ud.type === 'crate' || ud.type === 'barrel') damageProp(ud.ref, dmg * .6, fwd);
+    dust(h.point, 0x9a958c, 2, .2); SFX.thud(); shake = Math.max(shake, .06);
+  }
 }
 
 // ================= ENEMIES =================
@@ -737,7 +865,11 @@ function updatePickups(dt) {
     p.g.rotation.y += dt * 2; p.g.position.y = .4 + Math.sin(p.t * 3) * .08;
     const d = Math.hypot(p.g.position.x - player.pos.x, p.g.position.z - player.pos.z);
     if (d < 1.2 && player.alive) {
-      if (p.kind === 'ammo') { wState[0].reserve += 24; wState[1].reserve += 60; wState[2].reserve += 12; showMsg('+ MUNIÇÃO', .9, 26); }
+      if (p.kind === 'ammo') {
+        wState[0].reserve += 24; wState[1].reserve += 60; wState[2].reserve += 12; emptyWarned = false;
+        const g = grenadeCount < MAX_GREN; if (g) grenadeCount++;
+        showMsg(g ? '+ MUNIÇÃO  + GRANADA' : '+ MUNIÇÃO', .9, 26);
+      }
       else { player.hp = Math.min(100, player.hp + 35); showMsg('+ VIDA', .9, 26); }
       SFX.pickup(); hudDirty = true;
     } else if (p.life > 0) continue;
@@ -759,7 +891,7 @@ function startWave() {
 
 // ================= HUD =================
 const $ = id => document.getElementById(id);
-const hud = { wave: $('wave'), kills: $('kills'), left: $('left'), hp: $('hpfill'), mag: $('mag'), res: $('res'), wname: $('wname'), reload: $('reload'), msg: $('msg'), vig: $('vig'), cross: $('cross'), hitm: $('hitm') };
+const hud = { wave: $('wave'), kills: $('kills'), left: $('left'), hp: $('hpfill'), mag: $('mag'), res: $('res'), wname: $('wname'), reload: $('reload'), msg: $('msg'), vig: $('vig'), cross: $('cross'), hitm: $('hitm'), gren: $('gren') };
 let hudDirty = true, msgTimer = null, hitTimer = null;
 function updateHUD() {
   if (!hudDirty) return; hudDirty = false;
@@ -767,9 +899,12 @@ function updateHUD() {
   hud.wave.textContent = 'ONDA ' + wave; hud.kills.textContent = 'ABATES ' + kills; hud.left.textContent = 'INIMIGOS ' + alive;
   hud.hp.style.width = player.hp + '%';
   hud.hp.style.background = player.hp < 30 ? '#ff4b3a' : '';
-  hud.mag.textContent = st.ammo; hud.res.textContent = ' / ' + st.reserve; hud.wname.textContent = WEAPONS[wIndex].name;
-  hud.mag.style.color = st.ammo === 0 ? '#ff4b3a' : '';
-  hud.reload.style.visibility = reloading ? 'visible' : 'hidden';
+  const melee = WEAPONS[wIndex].melee, empty = !melee && st.ammo === 0 && st.reserve === 0;
+  hud.mag.textContent = melee ? '—' : st.ammo; hud.res.textContent = melee ? '' : ' / ' + st.reserve; hud.wname.textContent = WEAPONS[wIndex].name;
+  hud.mag.style.color = !melee && st.ammo === 0 ? '#ff4b3a' : '';
+  hud.reload.textContent = empty ? 'SEM MUNIÇÃO · CORONHADA' : 'RECARREGANDO';
+  hud.reload.style.visibility = reloading || empty ? 'visible' : 'hidden';
+  hud.gren.textContent = 'GRANADAS ' + grenadeCount;
 }
 function showMsg(t, dur = 1.5, size = 44) {
   hud.msg.textContent = t; hud.msg.style.fontSize = size + 'px'; hud.msg.style.opacity = 1;
@@ -797,10 +932,13 @@ addEventListener('keydown', e => {
   if (e.code === 'Digit1') selectWeapon(0);
   if (e.code === 'Digit2') selectWeapon(1);
   if (e.code === 'Digit3') selectWeapon(2);
+  if (e.code === 'Digit4') selectWeapon(3);
+  if (e.code === 'KeyG') throwGrenade();
+  if (e.code === 'KeyV' || e.code === 'KeyF') melee(WEAPONS[wIndex].melee ? 'fist' : 'butt');
   if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', e => keys[e.code] = false);
-addEventListener('wheel', e => { if (state === 'play' && !paused) selectWeapon((wIndex + (e.deltaY > 0 ? 1 : 2)) % 3); }, { passive: true });
+addEventListener('wheel', e => { if (state === 'play' && !paused) selectWeapon((wIndex + (e.deltaY > 0 ? 1 : 3)) % 4); }, { passive: true });
 addEventListener('mousemove', e => {
   if (state !== 'play' || paused || isTouch) return;
   if (locked || (lockFailed && rightDown)) look(e.movementX * SENS, e.movementY * SENS);
@@ -878,7 +1016,9 @@ if (isTouch) {
   btn('bFire', () => { triggerHeld = true; triggerFresh = true; }, () => triggerHeld = false);
   btn('bJump', () => touchState.jump = true);
   btn('bReload', () => startReload());
-  btn('bSwap', () => selectWeapon((wIndex + 1) % 3));
+  btn('bSwap', () => selectWeapon((wIndex + 1) % 4));
+  btn('bGren', () => throwGrenade());
+  btn('bMelee', () => melee(WEAPONS[wIndex].melee ? 'fist' : 'butt'));
   btn('bPause', () => { if (state === 'play') setPause(true); });
 }
 
@@ -909,6 +1049,8 @@ $('installBtn').addEventListener('click', async () => {
 function resetGame() {
   enemies.forEach(e => scene.remove(e.g)); enemies.length = 0;
   pickups.forEach(p => scene.remove(p.g)); pickups.length = 0;
+  grenades.forEach(g => scene.remove(g.m)); grenades.length = 0;
+  grenadeCount = 3; throwT = 0; meleeT = 0; emptyWarned = false;
   debris.forEach(d => scene.remove(d.m)); debris.length = 0;
   particles.forEach(p => { scene.remove(p.s); p.s.material.dispose(); }); particles.length = 0;
   holes.forEach(h => scene.remove(h)); holes.length = 0;
@@ -984,9 +1126,19 @@ function update(dt) {
       reloadT -= dt;
       if (reloadT <= 0) { const take = Math.min(w.mag - st.ammo, st.reserve); st.ammo += take; st.reserve -= take; reloading = false; hudDirty = true; }
     }
-    if (triggerHeld && (w.auto || triggerFresh) && now - lastShot >= w.rate && !reloading && switchT <= 0) {
-      if (st.ammo > 0) fire();
-      else { SFX.click(); lastShot = now; if (st.reserve > 0) startReload(); }
+    if (throwT > 0) throwT -= dt;
+    if (meleeT > 0) meleeT -= dt;
+    if (triggerHeld && switchT <= 0 && meleeT <= 0 && throwT <= 0) {
+      if (w.melee) melee('fist');
+      else if ((w.auto || triggerFresh) && now - lastShot >= w.rate && !reloading) {
+        if (st.ammo > 0) fire();
+        else if (st.reserve > 0) { SFX.click(); lastShot = now; startReload(); }
+        else {
+          // sem munição nenhuma: ataca com coronhada
+          melee('butt');
+          if (!emptyWarned) { emptyWarned = true; showMsg('SEM MUNIÇÃO — CORONHADA!', 1.6, 28); }
+        }
+      }
       triggerFresh = false;
     }
     aimT += ((rightDown && locked ? 1 : 0) - aimT) * Math.min(1, dt * 12);
@@ -998,11 +1150,12 @@ function update(dt) {
   if (waveActive && !enemies.some(e => e.alive)) {
     waveActive = false; waveDelay = 4; hudDirty = true;
     player.hp = Math.min(100, player.hp + 25);
+    grenadeCount = Math.min(MAX_GREN, grenadeCount + 1);
     showMsg('ONDA CONCLUÍDA', 2.5);
   }
   if (!waveActive && waveDelay > 0 && player.alive) { waveDelay -= dt; if (waveDelay <= 0) startWave(); }
 
-  updateParticles(dt); updateDebris(dt); updatePickups(dt);
+  updateParticles(dt); updateDebris(dt); updatePickups(dt); updateGrenades(dt);
   for (let i = tracers.length - 1; i >= 0; i--) {
     const t = tracers[i]; t.life -= dt; t.l.material.opacity = Math.max(0, t.life / .07) * .85;
     if (t.life <= 0) { scene.remove(t.l); t.l.geometry.dispose(); t.l.material.dispose(); tracers.splice(i, 1); }
@@ -1027,8 +1180,22 @@ function update(dt) {
   let dip = 0, tilt = 0;
   if (switchT > 0) dip = Math.sin(switchT / .35 * Math.PI) * .25;
   if (reloading) { const p = 1 - reloadT / WEAPONS[wIndex].reload; dip = Math.sin(p * Math.PI) * .15; tilt = Math.sin(p * Math.PI) * .6; }
-  gunHolder.position.set(bx + Math.cos(bobT) * .012 * (1 - aimT) + swayX * .05, by + Math.abs(Math.sin(bobT)) * .012 - dip - swayY * .05, bz + gunKick * .07);
-  gunHolder.rotation.set(gunKick * .12 + tilt * .5, -swayX * .3, tilt);
+  if (throwT > 0) dip = Math.max(dip, Math.sin((1 - throwT / .55) * Math.PI) * .3);
+  // coronhada: a arma gira de lado e avança
+  let mx = 0, mz = 0, mry = 0, mrz = 0;
+  if (meleeT > 0 && meleeKind === 'butt') {
+    const s = Math.sin((1 - meleeT / meleeDur) * Math.PI);
+    mx = -s * .2; mz = -s * .22; mry = s * 1.1; mrz = s * .5;
+  }
+  gunHolder.position.set(bx + mx + Math.cos(bobT) * .012 * (1 - aimT) + swayX * .05, by + Math.abs(Math.sin(bobT)) * .012 - dip - swayY * .05, bz + mz + gunKick * .07);
+  gunHolder.rotation.set(gunKick * .12 + tilt * .5, -swayX * .3 + mry, tilt + mrz);
+  // soco: a mão da vez avança até o centro
+  const hands = guns[3].g.userData.hands;
+  hands.forEach((hd, k) => {
+    const b = hd.userData.base; let s = 0;
+    if (meleeT > 0 && meleeKind === 'fist' && k === meleeHand) s = Math.sin((1 - meleeT / meleeDur) * Math.PI);
+    hd.position.set(b.x + (k === 0 ? 1 : -1) * s * .12, b.y + s * .1, b.z - s * .38);
+  });
 
   // ---- HUD ----
   vignette = Math.max(player.hp < 30 ? .35 + Math.sin(now * 6) * .1 : 0, vignette - dt * 1.2);

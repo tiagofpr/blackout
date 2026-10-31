@@ -41,4 +41,4 @@ Também funciona arrastando a pasta em **Netlify Drop** (app.netlify.com/drop).
 - **iPhone (Safari):** botão Compartilhar → *Adicionar à Tela de Início*.
 
 ## Atualizar o app
-Quando mudar algum arquivo, troque `blackout-v1` para `blackout-v2` em `sw.js`; assim os celulares baixam a versão nova.
+Quando mudar algum arquivo, troque a versão do cache (`blackout-v2` → `blackout-v3`) em `sw.js`; assim os celulares baixam a versão nova.

@@ -1,5 +1,5 @@
-// Service worker: guarda os arquivos do jogo para rodar offline
-const CACHE = 'blackout-v1';
+// Service worker: rede primeiro (pega sempre a versão nova), cache como reserva offline
+const CACHE = 'blackout-v2';
 const ASSETS = ['./', './index.html', './three.module.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -10,13 +10,12 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = e.request.url;
+  const cacheable = url.startsWith(self.location.origin) || url.includes('fonts.g');
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      // guarda também as fontes do Google quando carregadas
-      if (res.ok && (e.request.url.startsWith(self.location.origin) || e.request.url.includes('fonts.g'))) {
-        const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy));
-      }
+    fetch(e.request).then(res => {
+      if (res.ok && cacheable) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
   );
 });
