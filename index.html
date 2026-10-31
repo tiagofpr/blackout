@@ -55,6 +55,29 @@
   .btn:active{transform:scale(.97)}
   .small{font-size:14px;opacity:.6;margin-top:14px}
   #pause,#over{display:none}
+  .menu{display:flex;flex-direction:column;gap:12px;align-items:stretch;min-width:260px}
+  .h1s{font-size:64px!important;margin-bottom:18px!important}
+  .btn.sec{background:rgba(255,255,255,.06);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.45);font-size:20px}
+  .btn.danger{background:#e0342a;color:#fff}
+  #start .btn.sec{margin-top:12px;font-size:16px;padding:8px 22px}
+  .ask{font-size:20px;max-width:360px;margin:0 auto 6px;line-height:1.3}
+  body:not(.touch) .touchOnly{display:none}
+  /* editor de botões */
+  body.editing #touch{display:block!important;background:rgba(0,0,0,.4);z-index:20}
+  body.editing .tbtn{outline:2px dashed rgba(255,204,51,.85);outline-offset:3px;touch-action:none}
+  body.editing .tbtn.sel{background:rgba(255,204,51,.4);outline-style:solid}
+  body.editing #joyZone{display:flex}
+  #joyZone{display:none;position:absolute;left:0;top:0;bottom:0;width:42%;align-items:center;justify-content:center;
+    border-right:2px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.45);font-size:18px;letter-spacing:2px;pointer-events:none}
+  #editBar{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:none;gap:8px;align-items:center;z-index:30;
+    background:rgba(10,10,12,.88);padding:8px 10px;border-radius:12px;font-size:14px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+  #editBar button{font-family:inherit;font-weight:700;font-size:16px;min-width:44px;height:40px;border:0;border-radius:8px;background:#3a3a3e;color:#fff;padding:0 12px}
+  #editBar #eDone{background:#ff7a1a;color:#111}
+  #editBar.top{bottom:auto;top:calc(12px + env(safe-area-inset-top))}
+  body.dragging #editBar{opacity:.12;pointer-events:none}
+  #editBar #eSmaller,#editBar #eBigger{font-size:22px}
+  @media (max-height:500px){ .h1s{font-size:44px!important;margin-bottom:10px!important} .menu{gap:8px} .btn{font-size:20px;padding:8px 26px} .btn.sec{font-size:16px} }
+  @media (max-width:700px){ #editHint{display:none} }
   /* touch */
   #touch{position:fixed;inset:0;display:none;pointer-events:none}
   #joyBase{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);display:none;margin:-60px 0 0 -60px}
@@ -107,6 +130,7 @@
 </div>
 
 <div id="touch">
+  <div id="joyZone">ÁREA DO JOYSTICK</div>
   <div id="joyBase"><div id="joyKnob"></div></div>
   <div class="tbtn" id="bFire">ATIRAR</div>
   <div class="tbtn" id="bJump">PULO</div>
@@ -140,16 +164,37 @@
   </div>
   <button class="btn" id="playBtn">JOGAR</button>
   <button class="btn" id="installBtn">INSTALAR APP</button>
+  <button class="btn sec touchOnly" id="layoutBtn2">AJUSTAR BOTÕES</button>
   <div class="small">Atire nos barris vermelhos. Caixas quebram.</div>
 </div>
 <div class="screen" id="pause">
-  <h1 style="font-size:64px">PAUSA</h1><br>
-  <button class="btn" id="resumeBtn">CONTINUAR</button>
+  <h1 class="h1s">PAUSA</h1>
+  <div class="menu" id="pauseMenu">
+    <button class="btn" id="resumeBtn">CONTINUAR</button>
+    <button class="btn sec touchOnly" id="layoutBtn">AJUSTAR BOTÕES</button>
+    <button class="btn sec" id="quitBtn">SAIR DO JOGO</button>
+  </div>
+  <div class="menu" id="quitConfirm" style="display:none">
+    <div class="ask">Sair da partida? O progresso desta partida será perdido.</div>
+    <button class="btn danger" id="quitYes">SIM, SAIR</button>
+    <button class="btn sec" id="quitNo">VOLTAR</button>
+  </div>
+</div>
+<div id="editBar">
+  <span id="editHint">Arraste os botões. Toque em um para mudar o tamanho.</span>
+  <button id="eMove" aria-label="Mover barra">⇅</button>
+  <button id="eSmaller" aria-label="Diminuir">−</button>
+  <button id="eBigger" aria-label="Aumentar">+</button>
+  <button id="eReset">PADRÃO</button>
+  <button id="eDone">SALVAR</button>
 </div>
 <div class="screen" id="over">
   <h1 style="font-size:64px;color:#ff5a3c">ABATIDO</h1>
   <h2 id="overStats"></h2>
-  <button class="btn" id="againBtn">JOGAR DE NOVO</button>
+  <div class="menu">
+    <button class="btn" id="againBtn">JOGAR DE NOVO</button>
+    <button class="btn sec" id="menuBtn">MENU INICIAL</button>
+  </div>
 </div>
 
 <script type="module">
@@ -968,6 +1013,7 @@ document.addEventListener('pointerlockchange', () => {
 document.addEventListener('pointerlockerror', onLockFail);
 function setPause(p) {
   paused = p; $('pause').style.display = p ? 'flex' : 'none';
+  $('pauseMenu').style.display = 'flex'; $('quitConfirm').style.display = 'none';
   triggerHeld = false; for (const k in keys) keys[k] = false;
 }
 
@@ -976,7 +1022,7 @@ const touchState = { joyId: null, joyX: 0, joyY: 0, jx: 0, jy: 0, lookId: null, 
 if (isTouch) {
   const base = $('joyBase'), knob = $('joyKnob');
   addEventListener('touchstart', e => {
-    if (state !== 'play') return;
+    if (state !== 'play' || paused || editing) return;
     for (const t of e.changedTouches) {
       if (t.target.closest && t.target.closest('.tbtn')) continue;
       if (t.clientX < innerWidth * .42 && touchState.joyId === null) {
@@ -987,7 +1033,7 @@ if (isTouch) {
     }
   }, { passive: true });
   addEventListener('touchmove', e => {
-    if (state !== 'play') return;
+    if (state !== 'play' || paused || editing) return;
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier === touchState.joyId) {
@@ -1009,8 +1055,8 @@ if (isTouch) {
   addEventListener('touchend', endT); addEventListener('touchcancel', endT);
   const btn = (id, down, upFn) => {
     const el = $(id);
-    el.addEventListener('touchstart', e => { e.preventDefault(); el.classList.add('on'); down(); }, { passive: false });
-    const u = e => { e.preventDefault(); el.classList.remove('on'); upFn && upFn(); };
+    el.addEventListener('touchstart', e => { e.preventDefault(); if (editing || paused) return; el.classList.add('on'); down(); }, { passive: false });
+    const u = e => { e.preventDefault(); el.classList.remove('on'); if (!editing) upFn && upFn(); };
     el.addEventListener('touchend', u); el.addEventListener('touchcancel', u);
   };
   btn('bFire', () => { triggerHeld = true; triggerFresh = true; }, () => triggerHeld = false);
@@ -1046,7 +1092,7 @@ $('installBtn').addEventListener('click', async () => {
 });
 
 // ================= GAME FLOW =================
-function resetGame() {
+function clearWorld() {
   enemies.forEach(e => scene.remove(e.g)); enemies.length = 0;
   pickups.forEach(p => scene.remove(p.g)); pickups.length = 0;
   grenades.forEach(g => scene.remove(g.m)); grenades.length = 0;
@@ -1057,6 +1103,10 @@ function resetGame() {
   timers = [];
   for (const e of shootables.filter(s => s.userData.type === 'enemy')) removeFrom(shootables, e);
   [...crates, ...barrels].forEach(restoreProp);
+  tracers.forEach(t => scene.remove(t.l)); tracers.length = 0;
+}
+function resetGame() {
+  clearWorld();
   Object.assign(player, { hp: 100, alive: true, vy: 0, onGround: true, yaw: 0, pitch: 0, lastHit: -99 });
   player.pos.set(0, 0, 25); player.vel.set(0, 0, 0);
   wState = WEAPONS.map(w => ({ ammo: w.mag, reserve: w.reserve }));
@@ -1083,6 +1133,88 @@ function gameOver() {
 }
 $('playBtn').addEventListener('click', begin);
 $('againBtn').addEventListener('click', begin);
+$('menuBtn').addEventListener('click', quitToMenu);
+$('quitBtn').addEventListener('click', () => { $('pauseMenu').style.display = 'none'; $('quitConfirm').style.display = 'flex'; });
+$('quitNo').addEventListener('click', () => { $('pauseMenu').style.display = 'flex'; $('quitConfirm').style.display = 'none'; });
+$('quitYes').addEventListener('click', quitToMenu);
+$('layoutBtn').addEventListener('click', () => openLayoutEditor('pause'));
+$('layoutBtn2').addEventListener('click', () => openLayoutEditor('start'));
+
+// ================= SAIR PARA O MENU =================
+function quitToMenu() {
+  state = 'menu'; running = false; paused = false; triggerHeld = false;
+  ['pause', 'over'].forEach(id => $(id).style.display = 'none');
+  $('hud').style.display = 'none'; $('touch').style.display = 'none'; $('joyBase').style.display = 'none';
+  touchState.joyId = touchState.lookId = null; touchState.jx = touchState.jy = 0;
+  clearWorld(); player.alive = false;
+  try { if (document.pointerLockElement) document.exitPointerLock(); } catch (e) {}
+  try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
+  $('start').style.display = 'flex';
+}
+
+// ================= EDITOR DE BOTÕES =================
+const TB_IDS = ['bFire', 'bJump', 'bReload', 'bSwap', 'bGren', 'bMelee', 'bPause'];
+const LAYOUT_KEY = 'blackout.layout.v1';
+let layout = {}, editing = false, editFrom = 'pause', selBtn = null, drag = null;
+try { layout = JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}; } catch (e) { layout = {}; }
+function applyBtn(id) {
+  const el = $(id), L = layout[id];
+  if (L) {
+    el.style.left = (L.x * 100) + '%'; el.style.top = (L.y * 100) + '%'; el.style.right = 'auto'; el.style.bottom = 'auto';
+    el.style.transform = `translate(-50%,-50%) scale(${L.s || 1})`;
+  } else { el.style.left = el.style.top = el.style.right = el.style.bottom = el.style.transform = ''; }
+}
+const applyLayout = () => TB_IDS.forEach(applyBtn);
+function captureBtn(id) {
+  if (layout[id]) return layout[id];
+  const r = $(id).getBoundingClientRect();
+  return layout[id] = { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight, s: 1 };
+}
+function selectBtn(id) {
+  selBtn = id; TB_IDS.forEach(k => $(k).classList.toggle('sel', k === id));
+}
+function openLayoutEditor(from) {
+  editing = true; editFrom = from; drag = null;
+  ['start', 'pause'].forEach(id => $(id).style.display = 'none');
+  $('joyBase').style.display = 'none';
+  document.body.classList.add('editing'); $('editBar').style.display = 'flex';
+  selectBtn(null);
+}
+function closeLayoutEditor() {
+  editing = false; drag = null; selectBtn(null);
+  document.body.classList.remove('editing'); $('editBar').style.display = 'none';
+  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch (e) {}
+  if (editFrom === 'pause' && state === 'play') { $('pause').style.display = 'flex'; }
+  else { $('start').style.display = 'flex'; }
+}
+TB_IDS.forEach(id => {
+  const el = $(id);
+  el.addEventListener('pointerdown', e => {
+    if (!editing) return;
+    e.preventDefault(); e.stopPropagation();
+    selectBtn(id);
+    const L = captureBtn(id); applyBtn(id);
+    drag = { id, pid: e.pointerId, dx: e.clientX - L.x * innerWidth, dy: e.clientY - L.y * innerHeight };
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    document.body.classList.add('dragging');
+  });
+  el.addEventListener('pointermove', e => {
+    if (!editing || !drag || drag.id !== id || drag.pid !== e.pointerId) return;
+    const L = layout[id];
+    L.x = Math.min(.97, Math.max(.03, (e.clientX - drag.dx) / innerWidth));
+    L.y = Math.min(.96, Math.max(.04, (e.clientY - drag.dy) / innerHeight));
+    applyBtn(id);
+  });
+  const end = e => { if (drag && drag.pid === e.pointerId) { drag = null; document.body.classList.remove('dragging'); } };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+});
+const resize = d => { if (!selBtn) return; const L = captureBtn(selBtn); L.s = Math.min(1.8, Math.max(.6, Math.round((L.s + d) * 10) / 10)); applyBtn(selBtn); };
+$('eSmaller').addEventListener('click', () => resize(-.1));
+$('eBigger').addEventListener('click', () => resize(.1));
+$('eReset').addEventListener('click', () => { layout = {}; applyLayout(); selectBtn(null); });
+$('eDone').addEventListener('click', closeLayoutEditor);
+$('eMove').addEventListener('click', () => $('editBar').classList.toggle('top'));
+applyLayout();
 $('resumeBtn').addEventListener('click', () => { initAudio(); if (isTouch) goFullscreen(); setPause(false); tryLock(); });
 
 // ================= MAIN LOOP =================
