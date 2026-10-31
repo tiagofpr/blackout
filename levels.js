@@ -3,7 +3,8 @@
 // Coordenadas: o jogador começa no z positivo e avança para o z negativo.
 // blocks:  [x, z, largura, profundidade, altura, corDoContainer?]
 // crates / barrels: [x, z]
-// targets: [x, z, tipo ('tank' | 'radio' | 'generator'), idDoObjetivo?]
+// targets: [x, z, tipo ('tank' | 'radio' | 'generator' | 'cache'), idDoObjetivo?]
+// blocks com cor em texto ('#e8a33d' ou 'brick') viram casas de favela; style: 'favela' troca muro e cenário
 // pickups: [x, z, 'ammo' | 'health']
 // groups:  inimigos que surgem quando o jogador passa de um z (trigger)
 //          spawns: [x, z, tipo ('soldier' | 'heavy' | 'officer'), tag?]
@@ -11,6 +12,7 @@
 //   reach   { at:[x,z], r, text, time? }    chegar a um ponto (com tempo opcional)
 //   destroy { id, text }                    destruir todos os alvos com esse id
 //   kill    { tag, at:[x,z], text }         eliminar inimigo marcado
+//   rescue  { text }                         libertar todos os reféns (hostages: [x, z, giro])
 //   clear   { group, at:[x,z], text }       eliminar todo um grupo
 //   spawn:  id de grupo que aparece quando o objetivo começa
 // =====================================================================
@@ -129,6 +131,53 @@ export const LEVELS = [
       { type: 'destroy', id: 'gens', text: 'Destrua os geradores do galpão' },
       { type: 'kill', tag: 'cmd', at: [0, -36], text: 'Elimine o comandante' },
       { type: 'reach', at: [0, -88], r: 4, time: 75, text: 'Saia do complexo antes do cerco' },
+    ],
+  },
+  // -------------------------------------------------------------------
+  {
+    id: 'morro', name: 'MORRO', location: 'Comunidade no alto do morro — 17:30', free: true,
+    style: 'favela',
+    brief: 'A milícia invadiu a comunidade, montou um depósito de armas no campinho e fez moradores de reféns nas vielas. Entre pela rua de baixo, liberte os moradores, destrua o arsenal, derrube o chefe da milícia e suba até a laje do topo, onde o helicóptero vai buscar você.',
+    sky: 0xd8a273, fogNear: 30, fogFar: 120, light: 1.05,
+    bounds: [-22, 22, -95, 95],
+    start: [0, 90, 0], par: 420, diff: 1.2,
+    loadout: { ammo: [[12, 60], [30, 120], [6, 24]], grenades: 3 },
+    blocks: [
+      // rua de baixo
+      [-14, 82, 14, 8, 4, '#e8a33d'], [-15, 70, 12, 10, 6, 'brick'], [-13, 58, 16, 8, 5, '#d9534f'],
+      [14, 84, 14, 6, 5, 'brick'], [15, 72, 12, 10, 4, '#5bc0de'], [13, 60, 18, 8, 6, '#f0e68c'],
+      [-3, 76, 4, 1, 1.1, '#f4f1ea'], [4, 66, 3, 1, 1.1, 'brick'],
+      // vielas dos reféns
+      [0, 44, 8, 10, 5, '#9b59b6'], [-14, 46, 14, 10, 5, 'brick'], [14, 42, 14, 12, 7, '#f39c12'],
+      [-10, 28, 8, 8, 4, '#e74c3c'], [10, 30, 10, 6, 5, 'brick'], [0, 26, 4, 4, 3, '#1abc9c'],
+      [-19, 26, 6, 10, 6, '#3498db'], [19, 24, 6, 8, 4, '#e67e22'],
+      // campinho
+      [-20, 0, 4, 26, 5, '#f1c40f'], [20, 4, 4, 20, 6, 'brick'],
+      [-3.6, 13, .25, .25, 2.2, '#ffffff'], [3.6, 13, .25, .25, 2.2, '#ffffff'], [-3.6, -11, .25, .25, 2.2, '#ffffff'], [3.6, -11, .25, .25, 2.2, '#ffffff'],
+      // vielas de cima
+      [-12, -22, 18, 6, 5, 'brick'], [12, -24, 18, 6, 6, '#e84393'],
+      [-6, -36, 10, 8, 5, '#00b894'], [12, -38, 12, 10, 7, 'brick'], [-18, -40, 8, 12, 6, '#fdcb6e'],
+      [0, -52, 10, 6, 4, '#6c5ce7'],
+      // laje do topo
+      [-15, -70, 14, 8, 5, '#fab1a0'], [15, -74, 14, 8, 4, 'brick'], [-4, -66, 8, 1, 1.1, 'brick'], [6, -78, 8, 1, 1.1, '#f4f1ea'],
+    ],
+    crates: [[3, 86], [-5, 72], [5, 50], [-2, 36], [13, 18], [-14, 16], [6, -14], [-8, -62], [16, -60]],
+    barrels: [[-5, 80], [6, 70], [0, 52], [6, 36], [-8, 20], [-10, 12], [10, -10], [2, -28], [-13, -44], [6, -56], [-3, -80]],
+    targets: [[-12, 9, 'cache', 'arsenal'], [12, -7, 'cache', 'arsenal']],
+    hostages: [[-5.5, 44, Math.PI / 2], [18, 33, Math.PI], [-17, 36, 0]],
+    pickups: [[6, 88, 'ammo'], [-19, 38, 'health'], [0, 16, 'ammo'], [-16, -8, 'health'], [16, -46, 'ammo'], [-2, -64, 'health']],
+    groups: [
+      { id: 'A', trigger: 'start', spawns: [[-4, 62, 'soldier'], [5, 58, 'soldier'], [0, 54, 'soldier']] },
+      { id: 'B', trigger: 55, spawns: [[-5.5, 50, 'soldier'], [5.5, 38, 'soldier'], [-12, 36, 'soldier'], [12, 34, 'soldier'], [0, 32, 'soldier'], [-2, 22, 'soldier'], [10, 22, 'heavy']] },
+      { id: 'C', trigger: 18, spawns: [[-8, 6, 'soldier'], [8, 8, 'soldier'], [-10, -6, 'soldier'], [9, -2, 'soldier'], [0, -10, 'soldier'], [0, 2, 'heavy']] },
+      { id: 'D', trigger: -14, spawns: [[0, -30, 'soldier'], [-12, -30, 'soldier'], [8, -30, 'soldier'], [3, -44, 'soldier'], [-12, -48, 'soldier'], [14, -50, 'soldier'], [-4, -46, 'heavy'], [0, -58, 'officer', 'cmd']] },
+      { id: 'E', trigger: 'never', alert: true, spawns: [[-10, -80, 'soldier'], [12, -84, 'soldier'], [0, -72, 'heavy'], [-6, -88, 'soldier']] },
+    ],
+    objectives: [
+      { type: 'rescue', text: 'Liberte os moradores feitos reféns' },
+      { type: 'destroy', id: 'arsenal', text: 'Destrua o arsenal da milícia no campinho' },
+      { type: 'kill', tag: 'cmd', at: [0, -56], text: 'Elimine o chefe da milícia' },
+      { type: 'reach', at: [0, -86], r: 4, time: 70, spawn: 'E', text: 'Suba até a laje — o helicóptero não espera' },
     ],
   },
 ];
