@@ -151,6 +151,8 @@
   #rotate .ph{width:46px;height:78px;border:4px solid #ff7a1a;border-radius:9px;margin-bottom:22px;animation:rot 1.8s ease-in-out infinite}
   @keyframes rot{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
   @media (orientation:portrait){ body.touch #rotate{display:flex} }
+  .btn.cont{display:flex;flex-direction:column;align-items:center;line-height:1.1}
+  .btn.cont small{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:1px;font-weight:700;opacity:.75;margin-top:3px}
   #installBtn{display:none;margin-top:14px;font-size:18px;padding:8px 22px;background:transparent;color:#ffcc33;box-shadow:0 0 0 2px #ffcc33}
 </style>
 <script type="importmap">{"imports":{"three":"./three.module.js"}}</script>
@@ -189,6 +191,7 @@
   <h1>BLACKOUT</h1>
   <h2>PROTÓTIPO FPS</h2>
   <div class="menu">
+    <button class="btn cont" id="continueBtn" style="display:none">CONTINUAR<small id="contInfo"></small></button>
     <button class="btn" id="campBtn">CAMPANHA</button>
     <button class="btn sec" id="survBtn">SOBREVIVÊNCIA</button>
   </div>
@@ -252,6 +255,7 @@
   <div class="menu" id="pauseMenu">
     <button class="btn" id="resumeBtn">CONTINUAR</button>
     <button class="btn sec touchOnly" id="layoutBtn">AJUSTAR BOTÕES</button>
+    <button class="btn sec" id="saveQuitBtn">SALVAR E SAIR</button>
     <button class="btn sec" id="quitBtn">SAIR DO JOGO</button>
   </div>
   <div class="menu" id="quitConfirm" style="display:none">
@@ -273,6 +277,7 @@
   <h2 id="overStats"></h2>
   <div class="menu">
     <button class="btn" id="againBtn">JOGAR DE NOVO</button>
+    <button class="btn sec" id="restartBtn" style="display:none">REINICIAR FASE</button>
     <button class="btn sec" id="menuBtn">MENU INICIAL</button>
   </div>
 </div>
@@ -1134,6 +1139,10 @@ function startObjective(i) {
   if (o.time) SFX.alarm(); else SFX.objective();
   showMsg(o.text.toUpperCase(), 2.6, 28);
   hudDirty = true;
+  if (i > 0) {   // checkpoint a cada objetivo cumprido (salvo também no aparelho)
+    checkpoint = makeSnapshot(true); writeSave(checkpoint);
+    showNote('✔ Checkpoint salvo', 2.2);
+  }
 }
 function destroyProgress(o) { const all = targets.filter(t => t.objId === o.id); return [all.filter(t => !t.alive).length, all.length]; }
 function checkObjective(dt) {
@@ -1200,7 +1209,7 @@ function missionComplete() {
   const order = 'CBAS', prev = progress.best[curDef.id];
   progress.unlocked = Math.max(progress.unlocked, levelIdx + 2);
   progress.best[curDef.id] = { time: prev ? Math.min(prev.time, t) : t, grade: prev && order.indexOf(prev.grade) > order.indexOf(grade) ? prev.grade : grade };
-  saveProgress();
+  saveProgress(); clearSave(); checkpoint = null;
   const last = levelIdx + 1 >= LEVELS.length;
   $('winSub').textContent = last ? 'CAMPANHA CONCLUÍDA' : 'MISSÃO CUMPRIDA';
   $('winTitle').textContent = curDef.name;
@@ -1216,6 +1225,65 @@ function missionComplete() {
     $('hud').style.display = 'none'; $('touch').style.display = 'none';
     showScreen('win');
   }, 2200);
+}
+
+
+// ================= CHECKPOINT / SALVAR =================
+const SAVE_KEY = 'blackout.save.v1';
+let checkpoint = null;
+function makeSnapshot(isCheckpoint) {
+  return {
+    v: 1, level: levelIdx, id: curDef.id, at: Date.now(),
+    obj: objIdx < 0 ? 0 : (objDone ? objIdx + 1 : objIdx), escape: escapeT,
+    player: { x: player.pos.x, z: player.pos.z, yaw: player.yaw, hp: isCheckpoint ? Math.max(player.hp, 60) : player.hp },
+    ammo: wState.map(st => [st.ammo, st.reserve]), gren: grenadeCount, weapon: wIndex,
+    groups: [...groupsDone], tags: [...tagSeen],
+    targets: targets.map(t => t.alive), crates: crates.map(c => c.alive), barrels: barrels.map(b => b.alive),
+    enemies: enemies.filter(e => e.alive).map(e => ({ x: e.g.position.x, z: e.g.position.z, type: e.type, tag: e.tag, group: e.group, hp: e.hp, alert: e.alert })),
+    pickups: pickups.map(pk => [pk.g.position.x, pk.g.position.z, pk.kind, pk.life === Infinity ? -1 : pk.life]),
+    mission: { ...mission }, kills,
+  };
+}
+function readSave() {
+  try { const sv = JSON.parse(localStorage.getItem(SAVE_KEY)); return sv && sv.v === 1 && LEVELS[sv.level] && LEVELS[sv.level].id === sv.id ? sv : null; } catch (e) { return null; }
+}
+function writeSave(sv) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(sv)); } catch (e) {} }
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+function hideProp(p) {
+  if (!p.alive) return;
+  p.alive = false; p.col.active = false; levelGroup.remove(p.mesh);
+  p.parts.forEach(m => { removeFrom(shootables, m); removeFrom(losBlockers, m); });
+}
+// recria a fase exatamente como estava no momento salvo
+function restoreSnapshot(sv) {
+  mode = 'campaign'; levelIdx = sv.level;
+  const def = LEVELS[sv.level];
+  clearWorld(); buildLevel(def); resetPlayer(def.start, def.loadout);
+  player.pos.set(sv.player.x, 0, sv.player.z); player.yaw = sv.player.yaw; player.hp = sv.player.hp;
+  sv.ammo.forEach(([a, r], i) => { if (wState[i]) { wState[i].ammo = a; wState[i].reserve = r; } });
+  grenadeCount = sv.gren; selectWeapon(sv.weapon || 0); switchT = 0;
+  sv.targets.forEach((alive, i) => { if (!alive && targets[i]) hideProp(targets[i]); });
+  sv.crates.forEach((alive, i) => { if (!alive && crates[i]) hideProp(crates[i]); });
+  sv.barrels.forEach((alive, i) => { if (!alive && barrels[i]) hideProp(barrels[i]); });
+  groupsDone = new Set(sv.groups); tagSeen = new Set(sv.tags);
+  sv.enemies.forEach(en => { const e = spawnEnemy(en.x, en.z, en.type, { tag: en.tag, group: en.group, alert: en.alert }); e.hp = en.hp; });
+  sv.pickups.forEach(([x, z, k, life]) => spawnPickup({ x, z }, k, life < 0 ? Infinity : life));
+  Object.assign(mission, sv.mission); kills = sv.kills;
+  checkpoint = sv;
+  enterPlay();
+  // retoma o objetivo sem repetir o checkpoint
+  objIdx = sv.obj; objDone = false;
+  const o = def.objectives[objIdx];
+  if (!o) { missionComplete(); return; }
+  escapeT = o.time ? (sv.escape > 0 ? sv.escape : o.time) : 0;
+  if (o.spawn) spawnGroup(o.spawn);
+  showMsg(o.text.toUpperCase(), 2.6, 28);
+  hudDirty = true;
+}
+function updateContinue() {
+  const sv = readSave(), b = $('continueBtn');
+  b.style.display = sv ? '' : 'none';
+  if (sv) $('contInfo').textContent = `Fase ${sv.level + 1} · ${LEVELS[sv.level].name} · objetivo ${Math.min(sv.obj + 1, LEVELS[sv.level].objectives.length)}`;
 }
 
 // ================= HUD =================
@@ -1263,7 +1331,8 @@ function hitMarker(kill) {
   hud.hitm.className = 'on' + (kill ? ' kill' : ''); if (!kill) SFX.hit();
   clearTimeout(hitTimer); hitTimer = setTimeout(() => hud.hitm.className = '', 110);
 }
-function showNote(t) { const n = $('note'); n.textContent = t; n.style.display = 'block'; setTimeout(() => n.style.display = 'none', 7000); }
+let noteTimer = null;
+function showNote(t, dur = 7) { const n = $('note'); n.textContent = t; n.style.display = 'block'; clearTimeout(noteTimer); noteTimer = setTimeout(() => n.style.display = 'none', dur * 1000); }
 
 // ================= INPUT =================
 const keys = {};
@@ -1322,6 +1391,7 @@ function setPause(p) {
   touchState.fireId = null;
   paused = p; $('pause').style.display = p ? 'flex' : 'none';
   $('pauseMenu').style.display = 'flex'; $('quitConfirm').style.display = 'none';
+  $('saveQuitBtn').style.display = mode === 'campaign' ? '' : 'none';
   triggerHeld = false; for (const k in keys) keys[k] = false;
 }
 
@@ -1400,7 +1470,11 @@ function goFullscreen() {
     }
   } catch (e) {}
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !paused) setPause(true); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden || state !== 'play') return;
+  if (mode === 'campaign' && player.alive && !missionOver) writeSave(makeSnapshot(false));
+  if (!paused) setPause(true);
+});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
@@ -1413,7 +1487,7 @@ $('installBtn').addEventListener('click', async () => {
 
 // ================= GAME FLOW =================
 const SCREENS = ['start', 'levels', 'brief', 'win', 'over', 'pause'];
-function showScreen(id) { SCREENS.forEach(s => $(s).style.display = s === id ? 'flex' : 'none'); }
+function showScreen(id) { if (id === 'start') updateContinue(); SCREENS.forEach(s => $(s).style.display = s === id ? 'flex' : 'none'); }
 function clearWorld() {
   enemies.forEach(e => scene.remove(e.g)); enemies.length = 0;
   pickups.forEach(p => scene.remove(p.g)); pickups.length = 0;
@@ -1453,7 +1527,7 @@ function launchSurvival() {
   enterPlay(); startWave();
 }
 function launchLevel(i) {
-  mode = 'campaign'; levelIdx = i;
+  mode = 'campaign'; levelIdx = i; checkpoint = null;
   const def = LEVELS[i];
   clearWorld(); buildLevel(def); resetPlayer(def.start, def.loadout);
   (def.pickups || []).forEach(([x, z, k]) => spawnPickup({ x, z }, k, Infinity));
@@ -1468,8 +1542,10 @@ function gameOver(reason) {
   if (mode === 'campaign') {
     $('overTitle').textContent = reason ? 'MISSÃO FRACASSADA' : 'ABATIDO';
     $('overStats').textContent = `${curDef.name}${reason ? '  ·  ' + reason : ''}`;
-    $('againBtn').textContent = 'TENTAR DE NOVO';
+    $('againBtn').textContent = checkpoint ? 'VOLTAR AO CHECKPOINT' : 'TENTAR DE NOVO';
+    $('restartBtn').style.display = checkpoint ? '' : 'none';
   } else {
+    $('restartBtn').style.display = 'none';
     $('overTitle').textContent = 'ABATIDO';
     $('overStats').textContent = `ONDA ${wave}  ·  ${kills} ABATES`;
     $('againBtn').textContent = 'JOGAR DE NOVO';
@@ -1513,7 +1589,10 @@ $('briefBack').addEventListener('click', showLevels);
 $('nextBtn').addEventListener('click', () => showBrief(levelIdx + 1));
 $('replayBtn').addEventListener('click', () => launchLevel(levelIdx));
 $('winMenuBtn').addEventListener('click', quitToMenu);
-$('againBtn').addEventListener('click', () => mode === 'campaign' ? launchLevel(levelIdx) : launchSurvival());
+$('againBtn').addEventListener('click', () => mode !== 'campaign' ? launchSurvival() : checkpoint ? restoreSnapshot(checkpoint) : launchLevel(levelIdx));
+$('restartBtn').addEventListener('click', () => launchLevel(levelIdx));
+$('continueBtn').addEventListener('click', () => { const sv = readSave(); if (sv) restoreSnapshot(sv); });
+$('saveQuitBtn').addEventListener('click', () => { if (mode === 'campaign' && player.alive) writeSave(makeSnapshot(false)); quitToMenu(); });
 $('menuBtn').addEventListener('click', quitToMenu);
 $('quitBtn').addEventListener('click', () => { $('pauseMenu').style.display = 'none'; $('quitConfirm').style.display = 'flex'; });
 $('quitNo').addEventListener('click', () => { $('pauseMenu').style.display = 'flex'; $('quitConfirm').style.display = 'none'; });
@@ -1596,6 +1675,7 @@ $('eReset').addEventListener('click', () => { layout = {}; applyLayout(); select
 $('eDone').addEventListener('click', closeLayoutEditor);
 $('eMove').addEventListener('click', () => $('editBar').classList.toggle('top'));
 applyLayout();
+updateContinue();
 $('resumeBtn').addEventListener('click', () => { initAudio(); if (isTouch) goFullscreen(); setPause(false); tryLock(); });
 
 // ================= MAIN LOOP =================

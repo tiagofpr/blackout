@@ -1,5 +1,5 @@
 // Service worker: rede primeiro (pega sempre a versão nova), cache como reserva offline
-const CACHE = 'blackout-v5';
+const CACHE = 'blackout-v6';
 const ASSETS = ['./', './index.html', './levels.js', './three.module.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
